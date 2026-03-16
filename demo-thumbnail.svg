@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <!-- Background -->
+  <rect width="1280" height="720" fill="#0a0a0f"/>
+
+  <!-- Glow effects -->
+  <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#dc2626" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="#0a0a0f" stop-opacity="0"/>
+  </radialGradient>
+  <ellipse cx="640" cy="360" rx="600" ry="400" fill="url(#redGlow)"/>
+
+  <!-- Crime tape top -->
+  <rect x="0" y="60" width="1280" height="8" fill="none"/>
+  <pattern id="tape" x="0" y="0" width="160" height="8" patternUnits="userSpaceOnUse">
+    <rect width="80" height="8" fill="#f59e0b" opacity="0.5"/>
+    <rect x="80" width="80" height="8" fill="#0a0a0f" opacity="0.5"/>
+  </pattern>
+  <rect x="0" y="60" width="1280" height="8" fill="url(#tape)"/>
+
+  <!-- Crime tape bottom -->
+  <rect x="0" y="652" width="1280" height="8" fill="url(#tape)"/>
+
+  <!-- Red left stripe -->
+  <rect x="0" y="0" width="6" height="720" fill="#dc2626"/>
+
+  <!-- Title -->
+  <text x="640" y="290" font-family="'Segoe UI', system-ui, sans-serif" font-size="110" font-weight="900" fill="white" text-anchor="middle" letter-spacing="20" opacity="0.95">THE WITNESS</text>
+
+  <!-- Red underline -->
+  <rect x="270" y="310" width="740" height="4" fill="url(#underline)"/>
+  <linearGradient id="underline" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0a0a0f"/>
+    <stop offset="50%" stop-color="#dc2626"/>
+    <stop offset="100%" stop-color="#0a0a0f"/>
+  </linearGradient>
+
+  <!-- Subtitle -->
+  <text x="640" y="370" font-family="'Segoe UI', system-ui, sans-serif" font-size="24" fill="#6b7280" text-anchor="middle" letter-spacing="8">AI MURDER MYSTERY · GEMINI LIVE · REAL-TIME VOICE</text>
+
+  <!-- Play button circle -->
+  <circle cx="640" cy="490" r="56" fill="none" stroke="#dc2626" stroke-width="3" opacity="0.9"/>
+  <circle cx="640" cy="490" r="56" fill="#dc2626" opacity="0.15"/>
+  <!-- Play triangle -->
+  <polygon points="628,466 628,514 672,490" fill="#dc2626" opacity="0.95"/>
+
+  <!-- Play label -->
+  <text x="640" y="578" font-family="'Segoe UI', system-ui, sans-serif" font-size="18" fill="#6b7280" text-anchor="middle" letter-spacing="4">▶ WATCH DEMO (3 MIN)</text>
+
+  <!-- Bottom tag -->
+  <text x="640" y="640" font-family="'Courier New', monospace" font-size="13" fill="#374151" text-anchor="middle" letter-spacing="3">github.com/Aravindargutus/the-witness</text>
+</svg>
