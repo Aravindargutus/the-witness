@@ -2,6 +2,8 @@
 
 A real-time AI murder mystery interrogation game powered by Google Gemini Live. Players interrogate three AI witnesses — each with distinct personalities, secrets, and lies — to uncover who killed Dr. Shalini Rao.
 
+<video src="https://github.com/Aravindargutus/the-witness/raw/main/WitnessVideo.mp4" controls autoplay muted loop width="100%"></video>
+
 ## The Case
 
 **Victim:** Dr. Shalini Rao, found dead in Lab 3B of the BioNova Research Institute, Chennai — midnight.

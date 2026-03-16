@@ -25,6 +25,16 @@ frontend/dist/
 frontend/.vite/
 *.local
 
+# Remotion video — exclude heavy/generated files
+video/node_modules/
+video/out/
+video/.cache/
+# Root-level duplicates
+nikitakondrashev-suspense-248067.mp3
+# Rendered video outputs inside video/ subfolder
+video/ou.mp4
+video/out/*.mp4
+
 # Google Cloud credentials — keep these off git
 service-account*.json
 *-credentials.json

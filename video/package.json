@@ -1,0 +1,18 @@
+{
+  "name": "the-witness-video",
+  "version": "1.0.0",
+  "description": "Remotion video showcase for The Witness",
+  "main": "src/index.jsx",
+  "scripts": {
+    "start": "remotion studio src/index.jsx",
+    "build": "remotion render src/index.jsx WitnessVideo out/the-witness.mp4 --concurrency=4"
+  },
+  "type": "module",
+  "dependencies": {
+    "@remotion/cli": "^4.0.435",
+    "@remotion/renderer": "^4.0.435",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.435"
+  }
+}
