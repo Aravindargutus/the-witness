@@ -8,6 +8,7 @@ Browser  ◄── JSON text + audio  ────  Backend  ◄── audio/tex
 import asyncio
 import base64
 import json
+import logging
 import os
 import re
 import traceback
@@ -17,6 +18,10 @@ from pathlib import Path
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from google import genai
 from google.genai import types
+
+from middleware.rate_limit import ws_text_limiter, ws_voice_limiter
+
+logger = logging.getLogger(__name__)
 
 # Suppress SDK warning about non-data parts in Live API responses
 try:
@@ -31,6 +36,31 @@ LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
 SEND_SAMPLE_RATE = 16000
 RECV_SAMPLE_RATE = 24000
 MAX_HISTORY_TURNS = 40  # keep last 40 messages (~20 back-and-forth exchanges)
+
+# Audio safety limits
+MAX_AUDIO_CHUNK_BYTES = 1 * 1024 * 1024   # 1 MB per chunk
+MAX_AUDIO_BUFFER_BYTES = 10 * 1024 * 1024  # 10 MB total per turn
+
+_INJECTION_PATTERNS = [
+    "ignore previous instructions",
+    "ignore all previous",
+    "disregard your instructions",
+    "forget everything",
+    "new instructions:",
+    "system prompt",
+    "you are now",
+]
+
+
+def _sanitize_user_input(text: str) -> str:
+    """Truncate and block obvious prompt-injection attempts."""
+    text = text[:1000]  # hard length cap
+    lower = text.lower()
+    for pattern in _INJECTION_PATTERNS:
+        if pattern in lower:
+            logger.warning("Prompt injection attempt blocked: %.100s", text)
+            return "[input blocked]"
+    return text
 
 # Module-level singleton — avoids creating a new client per request
 _genai_client: genai.Client | None = None
@@ -233,6 +263,7 @@ async def interrogate(websocket: WebSocket, session_id: str, witness_id: str):
 
     voice_turn_task = None
     voice_audio_buffer = []  # Collect audio chunks for current voice turn
+    total_audio_bytes = 0
     is_recording = False
 
     try:
@@ -247,8 +278,18 @@ async def interrogate(websocket: WebSocket, session_id: str, witness_id: str):
                 try:
                     data = json.loads(message["text"])
                     if data.get("type") == "text":
-                        user_text = data["text"]
+                        user_text = _sanitize_user_input(data.get("text", ""))
+                        if not user_text:
+                            continue
                         print(f"[{witness_id}] Text question: {user_text}")
+
+                        # Rate limit text questions
+                        try:
+                            ws_text_limiter.check(f"{session_id}:{witness_id}")
+                        except Exception as e:
+                            async with ws_lock:
+                                await websocket.send_json({"type": "error", "text": "Too many questions. Please slow down."})
+                            continue
 
                         # Build conversation for context
                         conversation_history.append(
@@ -288,9 +329,19 @@ async def interrogate(websocket: WebSocket, session_id: str, witness_id: str):
                         print(f"[{witness_id}] End of voice turn ({len(voice_audio_buffer)} chunks buffered)")
                         is_recording = False
                         if voice_audio_buffer:
+                            # Rate limit voice turns
+                            try:
+                                ws_voice_limiter.check(f"{session_id}:{witness_id}")
+                            except Exception:
+                                async with ws_lock:
+                                    await websocket.send_json({"type": "error", "text": "Too many voice turns. Please wait."})
+                                voice_audio_buffer.clear()
+                                total_audio_bytes = 0
+                                continue
                             # Dispatch collected audio as a complete turn
                             chunks = list(voice_audio_buffer)
                             voice_audio_buffer.clear()
+                            total_audio_bytes = 0
                             # Wait for previous turn to finish
                             if voice_turn_task and not voice_turn_task.done():
                                 print(f"[{witness_id}] Waiting for previous voice turn...")
@@ -306,16 +357,25 @@ async def interrogate(websocket: WebSocket, session_id: str, witness_id: str):
 
             # Binary data = raw PCM audio from browser mic → buffer it
             elif "bytes" in message and message["bytes"]:
+                chunk = message["bytes"]
+                if len(chunk) > MAX_AUDIO_CHUNK_BYTES:
+                    async with ws_lock:
+                        await websocket.send_json({"type": "error", "text": "Audio chunk too large."})
+                    continue
+                if total_audio_bytes + len(chunk) > MAX_AUDIO_BUFFER_BYTES:
+                    async with ws_lock:
+                        await websocket.send_json({"type": "error", "text": "Audio buffer full. Click 'End Turn' to send."})
+                    continue
                 is_recording = True
-                voice_audio_buffer.append(message["bytes"])
+                voice_audio_buffer.append(chunk)
+                total_audio_bytes += len(chunk)
 
     except WebSocketDisconnect:
         print(f"[{witness_id}] Browser disconnected")
     except Exception as e:
-        print(f"[{witness_id}] Error: {e}")
-        traceback.print_exc()
+        logger.error("WebSocket error for %s/%s", session_id, witness_id, exc_info=True)
         try:
-            await websocket.send_json({"type": "error", "text": str(e)})
+            await websocket.send_json({"type": "error", "text": "An error occurred. Please try again."})
         except Exception:
             pass
     finally:

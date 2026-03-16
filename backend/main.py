@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from routers import session, statements, case, verdict, interrogate
+from middleware.security_headers import SecurityHeadersMiddleware
 
 
 @asynccontextmanager
@@ -21,18 +22,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="The Witness", version="0.1.0", lifespan=lifespan)
 
+# Security headers on every response
+app.add_middleware(SecurityHeadersMiddleware)
+
+# CORS — driven entirely from env; fallback to localhost for local dev only
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5178")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        os.getenv("FRONTEND_URL", "http://localhost:5178"),
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5179",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    max_age=3600,
 )
 
 app.include_router(session.router, prefix="/session", tags=["session"])

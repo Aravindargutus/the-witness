@@ -77,6 +77,9 @@ async def check_contradictions(session_id: str):
     for s in doc_ref.collection("statements").order_by("timestamp").stream():
         statements.append(s.to_dict())
 
+    # Cap to most recent 50 to keep O(n²) LLM calls bounded
+    statements = statements[-50:]
+
     if len(statements) < 2:
         return []
 

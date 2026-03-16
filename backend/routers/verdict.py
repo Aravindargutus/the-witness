@@ -1,15 +1,32 @@
+import os
+
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from services.firestore import db
 
 router = APIRouter()
 
+_VALID_SUSPECTS = {"meena", "arjun", "rajan", "divya"}
+
 
 class VerdictSubmit(BaseModel):
-    player_id: str
-    accused_witness: str  # witness_id of who they think did it
-    reasoning: str
+    player_id: str = Field(..., min_length=1, max_length=100)
+    accused_witness: str
+    reasoning: str = Field(..., min_length=10, max_length=2000)
+
+    @field_validator("accused_witness")
+    @classmethod
+    def validate_accused(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in _VALID_SUSPECTS:
+            raise ValueError(f"Invalid suspect. Must be one of: {', '.join(_VALID_SUSPECTS)}")
+        return v
+
+    @field_validator("reasoning")
+    @classmethod
+    def validate_reasoning(cls, v: str) -> str:
+        return v.strip()
 
 
 @router.post("/{session_id}")
