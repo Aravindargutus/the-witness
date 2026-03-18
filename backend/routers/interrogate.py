@@ -78,7 +78,9 @@ WITNESS_CONFIG = {
     "rajan": {"prompt": "rajan_prompt.txt", "voice": "Charon"},
 }
 
-PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "agents" / "prompts"
+PROMPTS_DIR = Path(os.getenv("PROMPTS_DIR") or "") or (
+    Path(__file__).resolve().parent.parent.parent / "agents" / "prompts"
+)
 
 
 def _load_prompt(witness_id: str) -> str:

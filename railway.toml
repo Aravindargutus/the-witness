@@ -1,0 +1,12 @@
+# Railway config for the BACKEND service
+# Set this service's Root Directory to: the-witness/
+
+[build]
+  builder = "DOCKERFILE"
+  dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+  healthcheckPath = "/health"
+  healthcheckTimeout = 300
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 3
